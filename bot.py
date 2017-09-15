@@ -4,7 +4,7 @@ import json
 import re
 import sys
 import logging
-
+import functools
 API_END = 'http://127.0.0.1:8000/'
 
 #No auth
@@ -76,16 +76,28 @@ def botty(instruction_no):
 
 
 def botty_2(instruction_no,variables):
+	success = True
 	instr_dict = get_response(instruction_no,'query/')
 	keys = instr_dict.keys()
 
 	if 'instruction' in keys:
 		if 'instruction_var' in keys:
-			ins_var = (i for i in instr_dict['instruction_var'])
-			ins = instr_dict['instruction']%(ins_var)	
+			if 'list_length' in keys:
+				i=0
+				for i in range(int(instr_dict['list_length'])):
+					#evaluations = list(map(lambda x:eval(x),instr_dict['instruction_var']))
+					a =  eval(instr_dict['instruction_var'][0])
+					b =  eval(instr_dict['instruction_var'][1])
+					ins = instr_dict['instruction']%(a,b)
+					print(ins)		
+			else:		
+				ins_var = [j for j in instr_dict['instruction_var']][0]
+				k = eval(ins_var)
+				ins = instr_dict['instruction']%(k)
+				print(ins)		
 		else:
-			ins = instr_dict['instruction_no']
-		print(ins)
+			ins = instr_dict['instruction']
+			print(ins)		
 
 	if 'text' in keys:
 		print(instr_dict['text'])
@@ -93,21 +105,49 @@ def botty_2(instruction_no,variables):
 		if 'options' in keys:
 			print(instr_dict['options'])
 
-		if 'var' in keys:
-			globals()[instr_dict['var']] = input()
-			variables.append((instr_dict['var'],eval(instr_dict['var'])))
-		
+		if ('var' in keys) and ('formula' not in keys):
+			if instr_dict['var'] in dict(variables).keys():
+				variables.pop(-1)
+
+			t = input()	
+			try:	
+				globals()[instr_dict['var']] = t
+				variables.append((instr_dict['var'],eval(instr_dict['var'])))
+				#rows[0] = input throws error.
+			except:
+				eval(variables[-1][0]).append(t)
+				#variables.append((variables[-1][0],eval(variables[-1][0]).append(t)))
+
 		if 'conditions' in keys:
-			cond = instr_dict['conditions']
+			for i in range(len(instr_dict['conditions'])):
+				for j in range(len(instr_dict['conditions'][i])):
+					instr_dict['conditions'][i][j] = eval(instr_dict['conditions'][i][j])
 
 
+			for i in range(len(instr_dict['conditions'])):
+				if len(instr_dict['conditions'])!=1:
+					instr_dict['conditions'][i] = functools.reduce(lambda x,y:x and y,instr_dict['conditions'][i])
+			if len(instr_dict['conditions'])!=1:		
+				instr_dict['conditions'][i] = functools.reduce(lambda x,y:x or y,instr_dict['conditions'][i])	
 
-	return variables		
+			cond = instr_dict['conditions'][0][0]
+			if cond == True:
+				success = False
+
+	if 'formula' in keys:
+		globals()[instr_dict['var']] = eval(instr_dict['formula'])		
+		variables.append((instr_dict['var'],eval(instr_dict['var'])))
+
+	return variables,success		
 
 
 def main_2():
 	variables = []
-	variables = botty_2(1,variables)
+
+	for i in range(17):
+		variables,success = botty_2(i,variables)
+		while success==False:
+			variables,success = botty_2(i,variables)
 
 
 def main():
