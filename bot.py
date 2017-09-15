@@ -75,9 +75,42 @@ def botty(instruction_no):
 	return variables	
 
 
+def botty_2(instruction_no,variables):
+	instr_dict = get_response(instruction_no,'query/')
+	keys = instr_dict.keys()
+
+	if 'instruction' in keys:
+		if 'instruction_var' in keys:
+			ins_var = (i for i in instr_dict['instruction_var'])
+			ins = instr_dict['instruction']%(ins_var)	
+		else:
+			ins = instr_dict['instruction_no']
+		print(ins)
+
+	if 'text' in keys:
+		print(instr_dict['text'])
+
+		if 'options' in keys:
+			print(instr_dict['options'])
+
+		if 'var' in keys:
+			globals()[instr_dict['var']] = input()
+			variables.append((instr_dict['var'],eval(instr_dict['var'])))
+		
+		if 'conditions' in keys:
+			cond = instr_dict['conditions']
+
+
+
+	return variables		
+
+
+def main_2():
+	variables = []
+	variables = botty_2(1,variables)
+
+
 def main():
-
-
 	instruction_no = 0
 	instr_dict = get_response(instruction_no,'query/')
 	keys = instr_dict.keys()
@@ -143,7 +176,7 @@ def main():
 		instr_dict = get_response(instruction_no,'query/')		
 		keys = instr_dict.keys()
 		if 'instruction_var' in keys:
-			print(instr_dict['instruction'].replace('%s',variables[-1][1]) )
+			print(instr_dict['instruction']%(variables[-1][1]))
 		instruction_no+=1	
 
 		#matrix setup
@@ -178,7 +211,7 @@ def main():
 		for i in range(int(instr_dict['list_length'])):
 			a = eval(instr_dict['instruction_var'][0])
 			b = eval(instr_dict['instruction_var'][1])
-			print(instr_dict['instruction'].replace('%s',str(a),1).replace('%s',b,1))	
+			print(instr_dict['instruction']%(a,b))
 	except:
 		pass		
 	print("GoodBye!")		
@@ -189,5 +222,5 @@ def delete():
 
 if __name__ == '__main__':
 	initialize()
-	main()
+	main_2()
 	delete()
